@@ -5,7 +5,7 @@
 
 
 # A Lightweight FTP Client
-The code is extracted from the old version JDK, with no dependencies.
+The code is extracted from the old version JDK, with no other dependencies.
 
 Tutorial: https://blog.csdn.net/zhangxin09/article/details/134222511.
 
