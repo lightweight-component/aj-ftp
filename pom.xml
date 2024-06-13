@@ -9,7 +9,7 @@
         <relativePath/>
     </parent>
 
-    <artifactId>aj-net</artifactId>
+    <artifactId>aj-ftp</artifactId>
     <name>aj-ftp</name>
     <version>1.1</version>
     <packaging>jar</packaging>

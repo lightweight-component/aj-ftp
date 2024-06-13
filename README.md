@@ -9,6 +9,8 @@ The code is extracted from the old version JDK, with no dependencies.
 
 Tutorial: https://blog.csdn.net/zhangxin09/article/details/134222511.
 
+Java Documents: https://dev.ajaxjs.com/docs/javadoc/aj-ftp/.
+
 ## Install
 ```xml
 <dependency>
