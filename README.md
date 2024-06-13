@@ -4,15 +4,35 @@
 [![QQ群](https://framework.ajaxjs.com/static/qq.svg)](https://shang.qq.com/wpa/qunwpa?idkey=3877893a4ed3a5f0be01e809e7ac120e346102bd550deb6692239bb42de38e22)
 
 
-# aj-ftp
-A Lightweight FTP Client
+# A Lightweight FTP Client
+The code is extracted from the old version JDK, with no dependencies.
 
+Tutorial: https://blog.csdn.net/zhangxin09/article/details/134222511.
 
 ## Install
 ```xml
 <dependency>
     <groupId>com.ajaxjs</groupId>
-    <artifactId>aj-ftp</artifactId>
-    <version>1.0</version>
+    <artifactId>aj-net</artifactId>
+    <version>1.1</version>
 </dependency>
+```
+
+## Usage
+
+FTP upload:
+
+```java
+UploadFtp client = new UploadFtp("speedtest.tele2.net", 21);
+client.login("anonymous", "anonymous");
+client.upload("c:\\temp\\re.zip", "/upload/re.zip");
+client.closeServer();
+```
+
+FTP download:
+```java
+UploadFtp ftp = new UploadFtp("speedtest.tele2.net", 21);
+ftp.login("anonymous", "anonymous");
+ftp.getFile("/1KB.zip", "c:\\temp\\re.zip");
+
 ```
