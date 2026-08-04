@@ -25,13 +25,11 @@
 
 package com.ajaxjs.net.ftp.sun;
 
-//import sun.net.NetworkClient;
-
-import java.io.*;
+import java.io.IOException;
 import java.util.Vector;
 
 /**
- * This class implements that basic intefaces of transfer protocols.
+ * This class implements that basic interfaces of transfer protocols.
  * It is used by subclasses implementing specific protocols.
  *
  * @author Jonathan Payne
@@ -39,26 +37,30 @@ import java.util.Vector;
  */
 
 public class TransferProtocolClient extends NetworkClient {
+    /**
+     * Debug flag for tracing protocol messages.
+     */
     static final boolean debug = false;
 
     /**
-     * Array of strings (usually 1 entry) for the last reply
-     * from the server.
+     * Array of strings (usually one entry) for the last reply from the server.
      */
-    protected Vector<String> serverResponse = new Vector<String>(1);
+    protected Vector<String> serverResponse = new Vector<>(1);
 
     /**
-     * code for last reply
+     * Code for last reply.
      */
     protected int lastReplyCode;
-
 
     /**
      * Pulls the response from the server and returns the code as a
      * number. Returns -1 on failure.
+     *
+     * @return numeric reply code from the server, or -1 on failure
+     * @throws IOException if an I/O error occurs
      */
     public int readServerResponse() throws IOException {
-        StringBuffer replyBuf = new StringBuffer(32);
+        StringBuilder replyBuf = new StringBuilder(32);
         int c;
         int continuingCode = -1;
         int code;
@@ -73,6 +75,7 @@ public class TransferProtocolClient extends NetworkClient {
                 }
 
                 replyBuf.append((char) c);
+
                 if (c == '\n')
                     break;
             }
@@ -97,19 +100,16 @@ public class TransferProtocolClient extends NetworkClient {
                 }
             }
             serverResponse.addElement(response);
+
             if (continuingCode != -1) {
-                /* we've seen a XXX- sequence */
-                if (code != continuingCode ||
-                        (response.length() >= 4 && response.charAt(3) == '-')) {
+                // we've seen a XXX- sequence
+                if (code != continuingCode || (response.length() >= 4 && response.charAt(3) == '-'))
                     continue;
-                } else {
-                    /* seen the end of code sequence */
-                    continuingCode = -1;
-                    break;
-                }
+                else
+                    continuingCode = -1;  // seen the end of code sequence
+                break;
             } else if (response.length() >= 4 && response.charAt(3) == '-') {
                 continuingCode = code;
-                continue;
             } else
                 break;
         }
@@ -119,6 +119,8 @@ public class TransferProtocolClient extends NetworkClient {
 
     /**
      * Sends command <i>cmd</i> to the server.
+     *
+     * @param cmd command string to send
      */
     public void sendServer(String cmd) {
         serverOutput.print(cmd);
@@ -127,7 +129,9 @@ public class TransferProtocolClient extends NetworkClient {
     }
 
     /**
-     * converts the server response into a string.
+     * Converts the server response into a string.
+     *
+     * @return first line of the server response
      */
     public String getResponseString() {
         return serverResponse.elementAt(0);
@@ -135,20 +139,26 @@ public class TransferProtocolClient extends NetworkClient {
 
     /**
      * Returns all server response strings.
+     *
+     * @return vector containing all response lines
      */
     public Vector<String> getResponseStrings() {
         return serverResponse;
     }
 
     /**
-     * standard constructor to host <i>host</i>, port <i>port</i>.
+     * Standard constructor to host <i>host</i>, port <i>port</i>.
+     *
+     * @param host server host name or IP address
+     * @param port server port
+     * @throws IOException if the connection cannot be established
      */
     public TransferProtocolClient(String host, int port) throws IOException {
         super(host, port);
     }
 
     /**
-     * creates an uninitialized instance of this class.
+     * Creates an uninitialized instance of this class.
      */
     public TransferProtocolClient() {
     }

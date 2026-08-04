@@ -25,7 +25,9 @@
 
 package com.ajaxjs.net.ftp.sun;
 
-import java.io.*;
+import java.io.BufferedOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 
 /**
  * This class provides input and output streams for telnet clients.
@@ -67,12 +69,11 @@ import java.io.*;
  *
  * @author Jonathan Payne
  */
-
 public class TelnetOutputStream extends BufferedOutputStream {
     boolean stickyCRLF = false;
     boolean seenCR = false;
 
-    public boolean binaryMode = false;
+    public boolean binaryMode;
 
     public TelnetOutputStream(OutputStream fd, boolean binary) {
         super(fd);
@@ -80,7 +81,7 @@ public class TelnetOutputStream extends BufferedOutputStream {
     }
 
     /**
-     * set the stickyCRLF flag. Tells weather the terminal considers CRLF as a single char.
+     * Set the stickyCRLF flag. Tells weather the terminal considers CRLF as a single char.
      *
      * @param on the <code>boolean</code> to set the flag to.
      */
@@ -91,6 +92,7 @@ public class TelnetOutputStream extends BufferedOutputStream {
     /**
      * Writes the int to the stream and does CR LF processing if necessary.
      */
+    @Override
     public void write(int c) throws IOException {
         if (binaryMode) {
             super.write(c);
@@ -120,6 +122,7 @@ public class TelnetOutputStream extends BufferedOutputStream {
                     c = 0;
                 }
             }
+
             super.write(c);
         }
     }
@@ -128,14 +131,14 @@ public class TelnetOutputStream extends BufferedOutputStream {
      * Write the bytes at offset <i>off</i> in buffer <i>bytes</i> for
      * <i>length</i> bytes.
      */
+    @Override
     public void write(byte[] bytes, int off, int length) throws IOException {
         if (binaryMode) {
             super.write(bytes, off, length);
             return;
         }
 
-        while (--length >= 0) {
+        while (--length >= 0)
             write(bytes[off++]);
-        }
     }
 }

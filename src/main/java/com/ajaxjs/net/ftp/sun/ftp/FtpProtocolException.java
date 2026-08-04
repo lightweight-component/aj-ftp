@@ -25,13 +25,13 @@
 
 package com.ajaxjs.net.ftp.sun.ftp;
 
-import java.io.*;
+import java.io.IOException;
 
 /**
  * This exception is thrown when unexpected results are returned during
  * an FTP session.
  *
- * @author      Jonathan Payne
+ * @author Jonathan Payne
  */
 public class FtpProtocolException extends IOException {
     FtpProtocolException(String s) {

@@ -32,7 +32,7 @@ package com.ajaxjs.net.ftp.sun.misc;
  */
 public class Regexp {
     /**
-     * if true then the matching process ignores case.
+     * if true, then the matching process ignores the case.
      */
     public boolean ignoreCase;
 
@@ -79,6 +79,7 @@ public class Regexp {
                 suffix = null;
             else
                 suffix = s.substring(lastst + 1);
+
             int nmids = 0;
             int pos = firstst;
 
@@ -86,6 +87,7 @@ public class Regexp {
                 nmids++;
                 pos = s.indexOf('*', pos + 1);
             }
+
             totalLen = prefixLen + suffixLen;
 
             if (nmids > 0) {
@@ -95,6 +97,7 @@ public class Regexp {
                 for (int i = 0; i < nmids; i++) {
                     pos++;
                     int npos = s.indexOf('*', pos);
+
                     if (pos < npos) {
                         mids[i] = s.substring(pos, npos);
                         totalLen += mids[i].length();
@@ -120,25 +123,22 @@ public class Regexp {
     boolean matches(String s, int offset, int len) {
         if (exact)
             return len == totalLen && exp.regionMatches(ignoreCase, 0, s, offset, len);
+
         if (len < totalLen)
             return false;
-        if (prefixLen > 0 &&
-                !prefix.regionMatches(ignoreCase,
-                        0, s, offset, prefixLen)
-                ||
-                suffixLen > 0 &&
-                        !suffix.regionMatches(ignoreCase,
-                                0, s, offset + len - suffixLen,
-                                suffixLen))
+
+        if (prefixLen > 0 && !prefix.regionMatches(ignoreCase, 0, s, offset, prefixLen)
+                || suffixLen > 0 && !suffix.regionMatches(ignoreCase, 0, s, offset + len - suffixLen, suffixLen))
             return false;
+
         if (mids == null)
             return true;
+
         int nmids = mids.length;
         int spos = offset + prefixLen;
         int limit = offset + len - suffixLen;
 
-        for (int i = 0; i < nmids; i++) {
-            String ms = mids[i];
+        for (String ms : mids) {
             int ml = ms.length();
             while (spos + ml <= limit &&
                     !ms.regionMatches(ignoreCase, 0, s, spos, ml))

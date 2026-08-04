@@ -3,23 +3,32 @@ package com.ajaxjs.net.ftp;
 import com.ajaxjs.net.ftp.sun.TelnetInputStream;
 import com.ajaxjs.net.ftp.sun.TelnetOutputStream;
 import com.ajaxjs.net.ftp.sun.ftp.FtpClient;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
 import java.nio.file.Files;
 
 /**
- * FTP 文件上传
+ * FTP file upload and download helper.
  */
+@Slf4j
 public class UploadFtp extends FtpClient {
+    /**
+     * Creates a new FTP client connected to the specified server and port.
+     *
+     * @param server FTP server host name or IP address
+     * @param port   FTP server port
+     * @throws IOException if the connection cannot be established
+     */
     public UploadFtp(String server, int port) throws IOException {
         super(server, port);
     }
 
     /**
-     * 用书上传本地文件到 FTP 服务器上
+     * Uploads a local file to the FTP server.
      *
-     * @param source 上传文件的本地路径
-     * @param target 上传到 FTP 的文件路径
+     * @param source local file path to upload
+     * @param target destination path on the FTP server
      */
     public void upload(String source, String target) {
         try {
@@ -30,8 +39,7 @@ public class UploadFtp extends FtpClient {
                 BufferedInputStream in = new BufferedInputStream(file);
 
                 new ProgressListener().copy(in, new BufferedOutputStream(ftp), in.available());
-
-                System.out.print("put file suc from " + source + "   to  " + target + "\r\n");
+                log.info("Put file from {} to {}", source, target);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -39,10 +47,10 @@ public class UploadFtp extends FtpClient {
     }
 
     /**
-     * 从 FTP 上下载所需要的文件
+     * Downloads a file from the FTP server to a local file.
      *
-     * @param source 在 FTP 上路径及文件名
-     * @param target 要保存的本地的路径
+     * @param source path and file name on the FTP server
+     * @param target local path to save the downloaded file
      */
     public void getFile(String source, String target) {
         try {
@@ -55,7 +63,7 @@ public class UploadFtp extends FtpClient {
                 listener.setFileName(target);
                 listener.copy(new BufferedInputStream(ftp), new BufferedOutputStream(file), getFileSize(source, ftp));
 
-                System.out.print("get file suc from " + source + "   to  " + target + "\r\n");
+                log.info("Get file from {} to {}", source, target);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -63,11 +71,16 @@ public class UploadFtp extends FtpClient {
     }
 
     /**
-     * 为了计算下载速度和百分比，读取 FTP 该文件的大小
+     * Reads the size of the specified file from the FTP server to calculate
+     * download progress and percentage.
+     *
+     * @param source path and file name on the FTP server
+     * @param ftp    FTP input stream for the file
+     * @return file size in bytes, or 0 if it cannot be determined
+     * @throws IOException if a communication error occurs
      */
     private int getFileSize(String source, TelnetInputStream ftp) throws IOException {
-        // 这里的组合使用是必须得 sendServer 后到 readServerResponse
-        sendServer("SIZE " + source + "\r\n");
+        sendServer("SIZE " + source + "\r\n");// sendServer followed by readServerResponse is required
 
         if (readServerResponse() == 213) {
             String msg = getResponseString();

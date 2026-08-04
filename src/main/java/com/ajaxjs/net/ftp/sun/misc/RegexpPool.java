@@ -27,7 +27,7 @@ package com.ajaxjs.net.ftp.sun.misc;
 //import sun.misc.REException;
 //import sun.misc.RegexpTarget;
 
-import java.io.*;
+import java.io.PrintStream;
 
 /**
  * A class to represent a pool of regular expressions.  A string
@@ -97,8 +97,7 @@ public class RegexpPool {
         int i;
         boolean prefix = true;
 
-        if (!re.startsWith("*") ||
-                !re.endsWith("*"))
+        if (!re.startsWith("*") || !re.endsWith("*"))
             len++;
 
         if (len <= 0)
@@ -110,6 +109,7 @@ public class RegexpPool {
                     && (!p.exact || i == len)) {
                 best = p;
             }
+
             if (i >= len)
                 break;
             p = p.find(re.charAt(i));
@@ -117,11 +117,13 @@ public class RegexpPool {
 
         /* march backward through the suffix machine */
         p = suffixMachine;
+
         for (i = len; --i >= 0 && p != null; ) {
             if (p.result != null && p.depth < BIG) {
                 prefix = false;
                 best = p;
             }
+
             p = p.find(re.charAt(i));
         }
 
@@ -130,7 +132,6 @@ public class RegexpPool {
             if (re.equals(best.re)) {
                 o = best.result;
                 best.result = null;
-
             }
         } else {
             if (re.equals(best.re)) {
@@ -145,7 +146,7 @@ public class RegexpPool {
      * Search for a match to a string & return the object associated
      * with it with the match.  When multiple regular expressions
      * would match the string, the best match is returned first.
-     * The next best match is returned the next time matchNext is
+     * The next best match is returned, the next time matchNext is
      * called.
      *
      * @param s The string to match against the regular expressions
@@ -220,6 +221,7 @@ public class RegexpPool {
         }
         /* march backward through the suffix machine */
         p = suffixMachine;
+
         for (i = len; --i >= 0 && p != null; ) {
             if (p.result != null && p.depth < lastMatchDepth) {
                 lastDepth = p.depth;
@@ -229,9 +231,12 @@ public class RegexpPool {
             }
             p = p.find(s.charAt(i));
         }
+
         Object o = best.result;
-        if (o != null && o instanceof RegexpTarget)
+
+        if (o instanceof RegexpTarget)
             o = ((RegexpTarget) o).found(s.substring(bst, bend));
+
         return o;
     }
 
@@ -241,9 +246,9 @@ public class RegexpPool {
      * to reset(); matchNext(s);
      * <p><b>Multithreading note:</b> reset/nextMatch leave state in the
      * regular expression pool.  If multiple threads could be using this
-     * pool this way, they should be syncronized to avoid race hazards.
+     * pool this way, they should be synchronized to avoid race hazards.
      * match() was done in such a way that there are no such race
-     * hazards: multiple threads can be matching in the same pool
+     * hazards: multiple threads can be matched in the same pool
      * simultaneously.
      */
     public void reset() {
@@ -299,19 +304,22 @@ class RegexpNode {
                     return p;
                 else
                     p = p.nextsibling;
+
             p = new RegexpNode(C, depth + 1);
             p.nextsibling = firstchild;
         }
+
         firstchild = p;
+
         return p;
     }
 
     RegexpNode find(char C) {
-        for (RegexpNode p = firstchild;
-             p != null;
-             p = p.nextsibling)
+        for (RegexpNode p = firstchild; p != null; p = p.nextsibling) {
             if (p.c == C)
                 return p;
+        }
+
         return null;
     }
 
@@ -319,10 +327,13 @@ class RegexpNode {
         if (nextsibling != null) {
             RegexpNode p = this;
             out.print("(");
+
             while (p != null) {
                 out.write(p.c);
+
                 if (p.firstchild != null)
                     p.firstchild.print(out);
+
                 p = p.nextsibling;
                 out.write(p != null ? '|' : ')');
             }

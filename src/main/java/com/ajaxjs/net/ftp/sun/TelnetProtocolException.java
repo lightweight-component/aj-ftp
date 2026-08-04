@@ -25,16 +25,20 @@
 
 package com.ajaxjs.net.ftp.sun;
 
-import java.io.*;
+import java.io.IOException;
 
 /**
- * An unexpected result was received by the client when talking to the
- * telnet server.
+ * The client received an unexpected result when talking to the telnet server.
  *
- * @author      Jonathan Payne
+ * @author Jonathan Payne
  */
 
 public class TelnetProtocolException extends IOException {
+    /**
+     * Constructs a TelnetProtocolException with the specified detail message.
+     *
+     * @param s detail message
+     */
     public TelnetProtocolException(String s) {
         super(s);
     }

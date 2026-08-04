@@ -25,9 +25,9 @@
 
 package com.ajaxjs.net.ftp.sun;
 
-//import sun.net.TelnetProtocolException;
-
-import java.io.*;
+import java.io.FilterInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * This class provides input and output streams for telnet clients.
@@ -70,7 +70,6 @@ import java.io.*;
  *
  * @author Jonathan Payne
  */
-
 public class TelnetInputStream extends FilterInputStream {
     /**
      * If stickyCRLF is true, then we're a machine, like an IBM PC,
@@ -78,19 +77,44 @@ public class TelnetInputStream extends FilterInputStream {
      * because Newline is represented with just a LF character.
      */
     boolean stickyCRLF = false;
+
+    /**
+     * True if the previous character read was a carriage return.
+     */
     boolean seenCR = false;
 
+    /**
+     * True when the stream is in binary mode and CRLF processing is disabled.
+     */
     public boolean binaryMode = false;
 
+    /**
+     * Creates a new telnet input stream.
+     *
+     * @param fd     underlying input stream
+     * @param binary true to enable binary mode
+     */
     public TelnetInputStream(InputStream fd, boolean binary) {
         super(fd);
         binaryMode = binary;
     }
 
+    /**
+     * Sets whether CRLF pairs should be returned as two separate characters.
+     *
+     * @param on true to enable sticky CRLF mode
+     */
     public void setStickyCRLF(boolean on) {
         stickyCRLF = on;
     }
 
+    /**
+     * Reads the next byte from the stream, performing CRLF processing unless in binary mode.
+     *
+     * @return next byte value, or -1 if end of stream is reached
+     * @throws IOException if an I/O error occurs
+     */
+    @Override
     public int read() throws IOException {
         if (binaryMode)
             return super.read();
@@ -101,22 +125,21 @@ public class TelnetInputStream extends FilterInputStream {
            not turning that into just a Newline (that is, we're
            stickyCRLF), then return the LF part of that sticky
            pair now. */
-
         if (seenCR) {
             seenCR = false;
             return '\n';
         }
 
-        if ((c = super.read()) == '\r') {    /* CR */
+        if ((c = super.read()) == '\r') {    // CR
             switch (c = super.read()) {
                 default:
-                case -1:                        /* this is an error */
+                case -1:                        // this is an error
                     throw new TelnetProtocolException("misplaced CR in input");
 
-                case 0:                         /* NUL - treat CR as CR */
+                case 0:                         // NUL - treat CR as CR
                     return '\r';
 
-                case '\n':                      /* CRLF - treat as NL */
+                case '\n':                      // CRLF - treat as NL
                     if (stickyCRLF) {
                         seenCR = true;
                         return '\r';
@@ -130,16 +153,27 @@ public class TelnetInputStream extends FilterInputStream {
     }
 
     /**
-     * read into a byte array
+     * Read into a byte array.
+     *
+     * @param bytes buffer to read into
+     * @return number of bytes read, or -1 if end of stream is reached
+     * @throws IOException if an I/O error occurs
      */
+    @Override
     public int read(byte[] bytes) throws IOException {
         return read(bytes, 0, bytes.length);
     }
 
     /**
-     * Read into a byte array at offset <i>off</i> for length <i>length</i>
-     * bytes.
+     * Read into a byte array at offset <i>off</i> for length <i>length</i> bytes.
+     *
+     * @param bytes  buffer to read into
+     * @param off    offset in the buffer to start writing
+     * @param length maximum number of bytes to read
+     * @return number of bytes read, or -1 if end of stream is reached
+     * @throws IOException if an I/O error occurs
      */
+    @Override
     public int read(byte[] bytes, int off, int length) throws IOException {
         if (binaryMode)
             return super.read(bytes, off, length);
@@ -153,6 +187,7 @@ public class TelnetInputStream extends FilterInputStream {
                 break;
             bytes[off++] = (byte) c;
         }
+
         return (off > offStart) ? off - offStart : -1;
     }
 }

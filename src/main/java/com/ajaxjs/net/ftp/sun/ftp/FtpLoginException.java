@@ -25,13 +25,11 @@
 
 package com.ajaxjs.net.ftp.sun.ftp;
 
-//import sun.net.ftp.FtpProtocolException;
-
 /**
  * This exception is thrown when an error is encountered during an
  * FTP login operation.
  *
- * @author      Jonathan Payne
+ * @author Jonathan Payne
  */
 public class FtpLoginException extends FtpProtocolException {
     FtpLoginException(String s) {

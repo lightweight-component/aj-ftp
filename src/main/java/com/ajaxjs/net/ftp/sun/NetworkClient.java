@@ -25,52 +25,77 @@
 package com.ajaxjs.net.ftp.sun;
 
 import java.io.*;
-import java.net.Socket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.net.Proxy;
-import java.util.Arrays;
+import java.net.Socket;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.Arrays;
 
 /**
  * This is the base class for network clients.
  *
- * @author      Jonathan Payne
+ * @author Jonathan Payne
  */
 public class NetworkClient {
-    protected Proxy     proxy = Proxy.NO_PROXY;
-    /** Socket for communicating with server. */
-    protected Socket    serverSocket = null;
+    /**
+     * Proxy to use for server connections.
+     */
+    protected Proxy proxy = Proxy.NO_PROXY;
 
-    /** Stream for printing to the server. */
-    public PrintStream  serverOutput;
+    /**
+     * Socket for communicating with server.
+     */
+    protected Socket serverSocket = null;
 
-    /** Buffered stream for reading replies from server. */
-    public InputStream  serverInput;
+    /**
+     * Stream for printing to the server.
+     */
+    public PrintStream serverOutput;
 
+    /**
+     * Buffered stream for reading replies from server.
+     */
+    public InputStream serverInput;
+
+    /**
+     * Default socket read timeout in milliseconds.
+     */
     protected static int defaultSoTimeout;
+
+    /**
+     * Default socket connect timeout in milliseconds.
+     */
     protected static int defaultConnectTimeout;
 
+    /**
+     * Socket read timeout for this client, in milliseconds.
+     */
     protected int readTimeout = -1;
+
+    /**
+     * Socket connect timeout for this client, in milliseconds.
+     */
     protected int connectTimeout = -1;
-    /* Name of encoding to use for output */
+
+    /**
+     * Name of encoding to use for output.
+     */
     protected static String encoding;
 
     static {
-        final int vals[] = {0, 0};
-        final String encs[] = { null };
+        final int[] vals = {0, 0};
+        final String[] encs = {null};
 
-        AccessController.doPrivileged(
-                new PrivilegedAction<Void>() {
-                    public Void run() {
-                        vals[0] = Integer.getInteger("sun.net.client.defaultReadTimeout", 300000).intValue();
-                        vals[1] = Integer.getInteger("sun.net.client.defaultConnectTimeout", 300000).intValue();
-                        encs[0] = System.getProperty("file.encoding", "ISO8859_1");
-                        return null;
-            }
+        AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
+            vals[0] = Integer.getInteger("sun.net.client.defaultReadTimeout", 300000);
+            vals[1] = Integer.getInteger("sun.net.client.defaultConnectTimeout", 300000);
+            encs[0] = System.getProperty("file.encoding", "ISO8859_1");
+
+            return null;
         });
+
         if (vals[0] == 0)
             defaultSoTimeout = -1;
         else
@@ -81,108 +106,123 @@ public class NetworkClient {
         else
             defaultConnectTimeout = vals[1];
 
-
         encoding = encs[0];
+
         try {
-            if (!isASCIISuperset (encoding)) {
+            if (!isASCIISuperset(encoding))
                 encoding = "ISO8859_1";
-            }
         } catch (Exception e) {
             encoding = "ISO8859_1";
         }
     }
 
-
     /**
      * Test the named character encoding to verify that it converts ASCII
-     * characters correctly. We have to use an ASCII based encoding, or else
-     * the NetworkClients will not work correctly in EBCDIC based systems.
+     * characters correctly. We have to use an ASCII-based encoding, or else
+     * the NetworkClients will not work correctly in EBCDIC-based systems.
      * However, we cannot just use ASCII or ISO8859_1 universally, because in
      * Asian locales, non-ASCII characters may be embedded in otherwise
-     * ASCII based protocols (eg. HTTP). The specifications (RFC2616, 2398)
+     * ASCII-based protocols (eg. HTTP). The specifications (RFC2616, 2398)
      * are a little ambiguous in this matter. For instance, RFC2398 [part 2.1]
      * says that the HTTP request URI should be escaped using a defined
      * mechanism, but there is no way to specify in the escaped string what
      * the original character set is. It is not correct to assume that
-     * UTF-8 is always used (as in URLs in HTML 4.0).  For this reason,
-     * until the specifications are updated to deal with this issue more
+     * UTF-8 is always used (as in URLs in HTML 4.0).
+     * <p>
+     * For this reason, until the specifications are updated to deal with this issue more
      * comprehensively, and more importantly, HTTP servers are known to
      * support these mechanisms, we will maintain the current behavior
      * where it is possible to send non-ASCII characters in their original
      * unescaped form.
+     *
+     * @param encoding encoding name to test
+     * @return true if the encoding is an ASCII superset
      */
-    private static boolean isASCIISuperset (String encoding) throws Exception {
-        String chkS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"+
-                        "abcdefghijklmnopqrstuvwxyz-_.!~*'();/?:@&=+$,";
+    private static boolean isASCIISuperset(String encoding) {
+        byte[] b;
 
-        // Expected byte sequence for string above
-        byte[] chkB = { 48,49,50,51,52,53,54,55,56,57,65,66,67,68,69,70,71,72,
-                73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,97,98,99,
-                100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,
-                115,116,117,118,119,120,121,122,45,95,46,33,126,42,39,40,41,59,
-                47,63,58,64,38,61,43,36,44};
+        try {
+            b = CHK_S.getBytes(encoding);
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
 
-        byte[] b = chkS.getBytes (encoding);
-        return Arrays.equals (b, chkB);
+        return Arrays.equals(b, CHK_B);
     }
 
-    /** Open a connection to the server. */
-    public void openServer(String server, int port)
-        throws IOException, UnknownHostException {
+    private static final String CHK_S = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+            "abcdefghijklmnopqrstuvwxyz-_.!~*'();/?:@&=+$,";
+
+    // Expected a byte sequence for the string above
+    private static final byte[] CHK_B = {48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71, 72,
+            73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 97, 98, 99,
+            100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114,
+            115, 116, 117, 118, 119, 120, 121, 122, 45, 95, 46, 33, 126, 42, 39, 40, 41, 59,
+            47, 63, 58, 64, 38, 61, 43, 36, 44};
+
+    /**
+     * Open a connection to the server.
+     *
+     * @param server server host name or IP address
+     * @param port   server port
+     * @throws IOException if the connection cannot be established
+     */
+    public void openServer(String server, int port) throws IOException {
         if (serverSocket != null)
             closeServer();
-        serverSocket = doConnect (server, port);
+
+        serverSocket = doConnect(server, port);
+
         try {
-            serverOutput = new PrintStream(new BufferedOutputStream(
-                                        serverSocket.getOutputStream()),
-                                        true, encoding);
+            serverOutput = new PrintStream(new BufferedOutputStream(serverSocket.getOutputStream()), true, encoding);
         } catch (UnsupportedEncodingException e) {
-            throw new InternalError(encoding +"encoding not found");
+            throw new InternalError(encoding + "encoding not found");
         }
+
         serverInput = new BufferedInputStream(serverSocket.getInputStream());
     }
 
     /**
      * Return a socket connected to the server, with any
-     * appropriate options pre-established
+     * appropriate options pre-established.
+     *
+     * @param server server host name or IP address
+     * @param port   server port
+     * @return connected socket
+     * @throws IOException if the connection cannot be established
      */
-    protected Socket doConnect (String server, int port)
-    throws IOException, UnknownHostException {
+    protected Socket doConnect(String server, int port) throws IOException {
         Socket s;
+
         if (proxy != null) {
-            if (proxy.type() == Proxy.Type.SOCKS) {
-                s = AccessController.doPrivileged(
-                    new PrivilegedAction<Socket>() {
-                        public Socket run() {
-                                       return new Socket(proxy);
-                                   }});
-            } else if (proxy.type() == Proxy.Type.DIRECT) {
+            if (proxy.type() == Proxy.Type.SOCKS)
+                s = AccessController.doPrivileged((PrivilegedAction<Socket>) () -> new Socket(proxy));
+            else if (proxy.type() == Proxy.Type.DIRECT)
                 s = createSocket();
-            } else {
-                // Still connecting through a proxy
-                // server & port will be the proxy address and port
+            else
+                // Still connecting through a proxy server & port will be the proxy address and port
                 s = new Socket(Proxy.NO_PROXY);
-            }
         } else
             s = createSocket();
-        // Instance specific timeouts do have priority, that means
+
+        // Instance-specific timeouts do have priority, that means
         // connectTimeout & readTimeout (-1 means not set)
         // Then global default timeouts
         // Then no timeout.
-        if (connectTimeout >= 0) {
+        if (connectTimeout >= 0)
             s.connect(new InetSocketAddress(server, port), connectTimeout);
-        } else {
-            if (defaultConnectTimeout > 0) {
+        else {
+            if (defaultConnectTimeout > 0)
                 s.connect(new InetSocketAddress(server, port), defaultConnectTimeout);
-            } else {
+            else
                 s.connect(new InetSocketAddress(server, port));
-            }
         }
+
         if (readTimeout >= 0)
             s.setSoTimeout(readTimeout);
-        else if (defaultSoTimeout > 0) {
+        else if (defaultSoTimeout > 0)
             s.setSoTimeout(defaultSoTimeout);
-        }
+
         return s;
     }
 
@@ -190,65 +230,107 @@ public class NetworkClient {
      * The following method, createSocket, is provided to allow the
      * https client to override it so that it may use its socket factory
      * to create the socket.
+     *
+     * @return a new unconnected socket
      */
-    protected Socket createSocket() throws IOException {
+    protected Socket createSocket() {
         return new Socket();
     }
 
+    /**
+     * Returns the local address of the current server connection.
+     *
+     * @return local InetAddress
+     * @throws IOException if not connected
+     */
     protected InetAddress getLocalAddress() throws IOException {
         if (serverSocket == null)
             throw new IOException("not connected");
-        return  AccessController.doPrivileged(
-                        new PrivilegedAction<InetAddress>() {
-                            public InetAddress run() {
-                                return serverSocket.getLocalAddress();
 
-                            }
-                        });
+        return AccessController.doPrivileged((PrivilegedAction<InetAddress>) () -> serverSocket.getLocalAddress());
     }
 
-    /** Close an open connection to the server. */
+    /**
+     * Close an open connection to the server.
+     *
+     * @throws IOException if an I/O error occurs while closing
+     */
     public void closeServer() throws IOException {
-        if (! serverIsOpen()) {
+        if (!serverIsOpen())
             return;
-        }
+
         serverSocket.close();
         serverSocket = null;
         serverInput = null;
         serverOutput = null;
     }
 
-    /** Return server connection status */
+    /**
+     * Return server connection status.
+     *
+     * @return true if connected to the server
+     */
     public boolean serverIsOpen() {
         return serverSocket != null;
     }
 
-    /** Create connection with host <i>host</i> on port <i>port</i> */
+    /**
+     * Create connection with host <i>host</i> on port <i>port</i>.
+     *
+     * @param host server host name or IP address
+     * @param port server port
+     * @throws IOException if the connection cannot be established
+     */
     public NetworkClient(String host, int port) throws IOException {
         openServer(host, port);
     }
 
-    public NetworkClient() {}
+    /**
+     * Creates an uninitialized network client.
+     */
+    public NetworkClient() {
+    }
 
+    /**
+     * Sets the connect timeout for this client.
+     *
+     * @param timeout connect timeout in milliseconds
+     */
     public void setConnectTimeout(int timeout) {
         connectTimeout = timeout;
     }
 
+    /**
+     * Returns the connect timeout for this client.
+     *
+     * @return connect timeout in milliseconds
+     */
     public int getConnectTimeout() {
         return connectTimeout;
     }
 
+    /**
+     * Sets the read timeout for this client.
+     *
+     * @param timeout read timeout in milliseconds
+     */
     public void setReadTimeout(int timeout) {
         if (serverSocket != null && timeout >= 0) {
             try {
                 serverSocket.setSoTimeout(timeout);
-            } catch(IOException e) {
+            } catch (IOException e) {
                 // We tried...
             }
         }
+
         readTimeout = timeout;
     }
 
+    /**
+     * Returns the read timeout for this client.
+     *
+     * @return read timeout in milliseconds
+     */
     public int getReadTimeout() {
         return readTimeout;
     }

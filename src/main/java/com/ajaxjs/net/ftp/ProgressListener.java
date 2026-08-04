@@ -1,17 +1,37 @@
 package com.ajaxjs.net.ftp;
 
+import lombok.Data;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
- * 上传进度
+ * Listener for tracking upload/download progress.
  */
+@Data
 public class ProgressListener {
+    /**
+     * Name of the file being transferred.
+     */
     private String fileName;
+
+    /**
+     * Number of bytes already read, in kilobytes.
+     */
     private volatile long bytesRead;
+
+    /**
+     * Total content length, in kilobytes.
+     */
     private volatile long contentLength;
 
+    /**
+     * Updates the progress with the current byte counts.
+     *
+     * @param aBytesRead    number of bytes already read
+     * @param aContentLength total content length in bytes
+     */
     public void update(long aBytesRead, long aContentLength) {
         bytesRead = aBytesRead / 1024L;
         contentLength = aContentLength / 1024L;
@@ -20,6 +40,14 @@ public class ProgressListener {
         System.out.println("上传或者下载文件：" + fileName + "，文件的大小：" + aBytesRead + "/" + aContentLength);
     }
 
+    /**
+     * Copies data from the input stream to the output stream and reports progress.
+     *
+     * @param in   input stream to read from
+     * @param out  output stream to write to
+     * @param size expected total size of the data
+     * @return total number of bytes copied
+     */
     public long copy(InputStream in, OutputStream out, long size) {
         byte[] buffer = new byte[8192];
         long total = 0L;
@@ -52,21 +80,5 @@ public class ProgressListener {
                 e.printStackTrace();
             }
         }
-    }
-
-    public long getBytesRead() {
-        return this.bytesRead;
-    }
-
-    public long getContentLength() {
-        return this.contentLength;
-    }
-
-    public String getFileName() {
-        return fileName;
-    }
-
-    public void setFileName(String fileName) {
-        this.fileName = fileName;
     }
 }
