@@ -65,7 +65,7 @@ public class Regexp {
     /**
      * Array of strings between '*' wildcards.
      */
-    public String mids[];
+    public String[] mids;
 
     /**
      * Create a new regular expression object.  The regular expression

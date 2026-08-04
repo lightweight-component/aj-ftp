@@ -197,9 +197,8 @@ public class FtpClient extends TransferProtocolClient {
                     StringTokenizer st = new StringTokenizer(rawList, "|", false);
 
                     try {
-                        while (st.hasMoreTokens()) {
+                        while (st.hasMoreTokens())
                             pool.add(st.nextToken().toLowerCase(), Boolean.TRUE);
-                        }
                     } catch (REException ex) {
                         System.err.println("Error in http.nonProxyHosts system property: " + ex);
                     }
@@ -495,23 +494,19 @@ public class FtpClient extends TransferProtocolClient {
                     throw e;
                 }
             }
-            // Either the EPRT or the PORT command was successful
-            // Let's create the client socket
-            if (connectTimeout >= 0) {
+
+            // Either the EPRT or the PORT command was successful. Let's create the client socket
+            if (connectTimeout >= 0)
                 portSocket.setSoTimeout(connectTimeout);
-            } else {
-                if (defaultConnectTimeout > 0)
-                    portSocket.setSoTimeout(defaultConnectTimeout);
-            }
+            else if (defaultConnectTimeout > 0)
+                portSocket.setSoTimeout(defaultConnectTimeout);
 
             clientSocket = portSocket.accept();
 
             if (readTimeout >= 0)
                 clientSocket.setSoTimeout(readTimeout);
-            else {
-                if (defaultSoTimeout > 0)
-                    clientSocket.setSoTimeout(defaultSoTimeout);
-            }
+            else if (defaultSoTimeout > 0)
+                clientSocket.setSoTimeout(defaultSoTimeout);
         } finally {
             portSocket.close();
         }
