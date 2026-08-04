@@ -37,7 +37,8 @@ public interface RegexpTarget {
      * This method is called by RegexpPool.match() who passes the return
      * value from found() back to its caller.
      *
-     * @param remainder the string that matched the * in the pattern.
+     * @param remainder the string that matched the * in the pattern
+     * @return result object to return from the match method
      */
     Object found(String remainder);
 }

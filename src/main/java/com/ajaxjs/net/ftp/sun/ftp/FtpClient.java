@@ -46,37 +46,59 @@ import java.util.regex.Pattern;
  * @author Jonathan Payne
  */
 public class FtpClient extends TransferProtocolClient {
+    /**
+     * Default FTP port number.
+     */
     public static final int FTP_PORT = 21;
 
+    /**
+     * FTP response code indicating success.
+     */
     static int FTP_SUCCESS = 1;
+
+    /**
+     * FTP response code indicating to try again.
+     */
     static int FTP_TRY_AGAIN = 2;
+
+    /**
+     * FTP response code indicating an error.
+     */
     static int FTP_ERROR = 3;
 
     /**
-     * remember the ftp server name because we may need it
+     * Remember the ftp server name because we may need it.
      */
     private String serverName = null;
 
     /**
-     * socket for data transfer
+     * Socket for data transfer.
      */
     private boolean replyPending = false;
+
+    /**
+     * True when the client is in binary transfer mode.
+     */
     private boolean binaryMode = false;
+
+    /**
+     * True after a successful login.
+     */
     private boolean loggedIn = false;
 
     /**
-     * regexp pool of hosts for which we should connect directly, not Proxy
-     * these are initialized from a property.
+     * Regexp pool of hosts for which we should connect directly, not Proxy.
+     * These are initialized from a property.
      */
     private static RegexpPool nonProxyHostsPool = null;
 
     /**
-     * The string source of nonProxyHostsPool
+     * The string source of nonProxyHostsPool.
      */
     private static String nonProxyHostsSource = null;
 
     /**
-     * last command issued
+     * Last command issued.
      */
     String command;
 
@@ -97,15 +119,18 @@ public class FtpClient extends TransferProtocolClient {
     */
 
     /**
-     * @return if the networking layer should send ftp connections through
-     * a proxy
+     * Returns whether the networking layer should send ftp connections through a proxy.
+     *
+     * @return true if ftp proxy is configured
      */
     public static boolean getUseFtpProxy() {
         return getFtpProxyHost() != null; // if the ftp.proxyHost is set, use it!
     }
 
     /**
-     * @return the host to use, or null if none has been specified
+     * Returns the host to use for FTP proxy, or null if none has been specified.
+     *
+     * @return proxy host name or null
      */
     public static String getFtpProxyHost() {
         return AccessController.doPrivileged(
@@ -126,35 +151,40 @@ public class FtpClient extends TransferProtocolClient {
     }
 
     /**
-     * @return the proxy port to use.  Will default reasonably if not set.
+     * Returns the proxy port to use. Will default reasonably if not set.
+     *
+     * @return proxy port number
      */
     public static int getFtpProxyPort() {
         final int[] result = {80};
-        AccessController.doPrivileged(
-                new PrivilegedAction<Void>() {
-                    public Void run() {
 
-                        String tmp = System.getProperty("ftp.proxyPort");
-                        if (tmp == null) {
-                            // for compatibility with 1.0.2
-                            tmp = System.getProperty("ftpProxyPort");
-                        }
-                        if (tmp == null) {
-                            // as a last resort we use the general one if ftp.useProxy
-                            // is true
-                            if (Boolean.getBoolean("ftp.useProxy")) {
-                                tmp = System.getProperty("proxyPort");
-                            }
-                        }
-                        if (tmp != null) {
-                            result[0] = Integer.parseInt(tmp);
-                        }
-                        return null;
-                    }
-                });
+        AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
+            String tmp = System.getProperty("ftp.proxyPort");
+
+            if (tmp == null)
+                tmp = System.getProperty("ftpProxyPort"); // for compatibility with 1.0.2
+
+            if (tmp == null) {
+                // as a last resort, we use the general one if ftp.useProxy is true
+                if (Boolean.getBoolean("ftp.useProxy"))
+                    tmp = System.getProperty("proxyPort");
+            }
+
+            if (tmp != null)
+                result[0] = Integer.parseInt(tmp);
+
+            return null;
+        });
+
         return result[0];
     }
 
+    /**
+     * Checks if the given host matches the non-proxy hosts pattern.
+     *
+     * @param host host name to check
+     * @return true if the host matches non-proxy hosts
+     */
     public static boolean matchNonProxyHosts(String host) {
         synchronized (FtpClient.class) {
             String rawList = AccessController.doPrivileged(new sun.security.action.GetPropertyAction("ftp.nonProxyHosts"));
@@ -173,6 +203,7 @@ public class FtpClient extends TransferProtocolClient {
                     } catch (REException ex) {
                         System.err.println("Error in http.nonProxyHosts system property: " + ex);
                     }
+
                     nonProxyHostsPool = pool;
                 }
             }
@@ -187,9 +218,9 @@ public class FtpClient extends TransferProtocolClient {
     }
 
     /**
-     * issue the QUIT command to the FTP server and close the connection.
+     * Issue the QUIT command to the FTP server and close the connection.
      *
-     * @throws FtpProtocolException if an error occurred
+     * @throws IOException if an I/O error occurs
      */
     public void closeServer() throws IOException {
         if (serverIsOpen()) {
@@ -203,7 +234,7 @@ public class FtpClient extends TransferProtocolClient {
      *
      * @param cmd String containing the command
      * @return reply code
-     * @throws FtpProtocolException if an error occurred
+     * @throws IOException if an I/O error occurs
      */
     protected int issueCommand(String cmd) throws IOException {
         command = cmd;
@@ -234,7 +265,7 @@ public class FtpClient extends TransferProtocolClient {
      * Send a command to the FTP server and check for success.
      *
      * @param cmd String containing the command
-     * @throws FtpProtocolException if an error occured
+     * @throws IOException if an I/O error occurs
      */
     protected void issueCommandCheck(String cmd) throws IOException {
         if (issueCommand(cmd) != FTP_SUCCESS)
@@ -245,7 +276,7 @@ public class FtpClient extends TransferProtocolClient {
      * Read the reply from the FTP server.
      *
      * @return FTP_SUCCESS or FTP_ERROR depending on success
-     * @throws FtpProtocolException if an error occured
+     * @throws IOException if an I/O error occurs
      */
     protected int readReply() throws IOException {
         lastReplyCode = readServerResponse();
@@ -269,16 +300,15 @@ public class FtpClient extends TransferProtocolClient {
                     throw new FileNotFoundException(command + ": " + getResponseString());
         }
 
-        /* this statement is not reached */
-        return FTP_ERROR;
+        return FTP_ERROR; // this statement is not reache
     }
 
     /**
      * Tries to open a Data Connection in "PASSIVE" mode by issuing a EPSV or
-     * PASV command then opening a Socket to the specified address & port
+     * PASV command then opening a Socket to the specified address & port.
      *
      * @return the opened socket
-     * @throws FtpProtocolException if an error occurs when issuing the PASV command to the ftp server.
+     * @throws IOException if an error occurs when issuing the PASV command to the ftp server
      */
     protected Socket openPassiveDataConnection() throws IOException {
         String serverAnswer;
@@ -297,18 +327,14 @@ public class FtpClient extends TransferProtocolClient {
          *   will have to try the EPRT or PORT command
          */
         if (issueCommand("EPSV ALL") == FTP_SUCCESS) {
-            // We can safely use EPSV commands
-            if (issueCommand("EPSV") == FTP_ERROR)
+            if (issueCommand("EPSV") == FTP_ERROR)// We can safely use EPSV commands
                 throw new FtpProtocolException("EPSV Failed: " + getResponseString());
 
             serverAnswer = getResponseString();
 
-            // The response string from a EPSV command will contain the port number
-            // the format will be :
-            //  229 Entering Extended Passive Mode (|||58210|)
-            //
-            // So we'll use the regular expresions package to parse the output.
-
+            // The response string from an EPSV command will contain the port number
+            // the format will be: 229 Entering Extended Passive Mode (|||58210|)
+            // So we'll use the regular expressions package to parse the output.
             Pattern p = Pattern.compile("^229 .* \\(\\|\\|\\|(\\d+)\\|\\)");
             Matcher m = p.matcher(serverAnswer);
 
@@ -336,41 +362,33 @@ public class FtpClient extends TransferProtocolClient {
 
             serverAnswer = getResponseString();
 
-            // Let's parse the response String to get the IP & port to connect to
-            // the String should be in the following format :
-            //
-            // 227 Entering Passive Mode (A1,A2,A3,A4,p1,p2)
-            //
-            // Note that the two parenthesis are optional
-            //
-            // The IP address is A1.A2.A3.A4 and the port is p1 * 256 + p2
-            //
-            // The regular expression is a bit more complex this time, because the
-            // parenthesis are optionals and we have to use 3 groups.
-
+            /*
+                 Let's parse the response String to get the IP & port to connect to
+                 the String should be in the following format :
+                 227 Entering Passive Mode (A1,A2,A3,A4,p1,p2)
+                 Note that the two parenthesis are optional
+                 The IP address is A1.A2.A3.A4 and the port is p1 * 256 + p2
+                 The regular expression is a bit more complex this time, because the
+                 parenthesis are optionals, and we have to use 3 groups.
+             */
             Pattern p = Pattern.compile("227 .* \\(?(\\d{1,3},\\d{1,3},\\d{1,3},\\d{1,3}),(\\d{1,3}),(\\d{1,3})\\)?");
             Matcher m = p.matcher(serverAnswer);
 
             if (!m.find())
                 throw new FtpProtocolException("PASV failed : " + serverAnswer);
-            // Get port number out of group 2 & 3
-            port = Integer.parseInt(m.group(3)) + (Integer.parseInt(m.group(2)) << 8);
-            // IP address is simple
-            String s = m.group(1).replace(',', '.');
+
+            port = Integer.parseInt(m.group(3)) + (Integer.parseInt(m.group(2)) << 8);// Get port number out of group 2 & 3
+            String s = m.group(1).replace(',', '.');  // IP address is simple
             dest = new InetSocketAddress(s, port);
         }
 
         // Got everything, let's open the socket!
         Socket s;
+
         if (proxy != null) {
-            if (proxy.type() == Proxy.Type.SOCKS) {
-                s = AccessController.doPrivileged(
-                        new PrivilegedAction<Socket>() {
-                            public Socket run() {
-                                return new Socket(proxy);
-                            }
-                        });
-            } else
+            if (proxy.type() == Proxy.Type.SOCKS)
+                s = AccessController.doPrivileged((PrivilegedAction<Socket>) () -> new Socket(proxy));
+            else
                 s = new Socket(Proxy.NO_PROXY);
         } else
             s = new Socket();
@@ -394,11 +412,11 @@ public class FtpClient extends TransferProtocolClient {
 
     /**
      * Tries to open a Data Connection with the server. It will first try a passive
-     * mode connection, then, if it fails, a more traditional PORT command
+     * mode connection, then, if it fails, a more traditional PORT command.
      *
      * @param cmd the command to execute (RETR, STOR, etc...)
      * @return the opened socket
-     * @throws FtpProtocolException if an error occurs when issuing the PORT command to the ftp server.
+     * @throws IOException if an error occurs when issuing the PORT command to the ftp server
      */
     protected Socket openDataConnection(String cmd) throws IOException {
         ServerSocket portSocket;
@@ -407,8 +425,7 @@ public class FtpClient extends TransferProtocolClient {
         InetAddress myAddress;
         IOException e;
 
-        // Let's try passive mode first
-        try {
+        try { // Let's try passive mode first
             clientSocket = openPassiveDataConnection();
         } catch (IOException ex) {
             clientSocket = null;
@@ -431,15 +448,18 @@ public class FtpClient extends TransferProtocolClient {
 
         // Passive mode failed, let's fall back to the good old "PORT"
 
-        if (proxy != null && proxy.type() == Proxy.Type.SOCKS) {
+        if (proxy != null && proxy.type() == Proxy.Type.SOCKS)
             // We're behind a firewall, and the passive mode fails, since we can't accept a connection through SOCKS (yet) throw an exception
             throw new FtpProtocolException("Passive mode failed");
-        } else
+        else
             portSocket = new ServerSocket(0, 1);
+
         try {
             myAddress = portSocket.getInetAddress();
+
             if (myAddress.isAnyLocalAddress())
                 myAddress = getLocalAddress();
+
             // Let's try the new, IPv6 compatible EPRT command
             // See RFC2428 for specifics
             // Some FTP servers (like the one on Solaris) are bugged, they
@@ -451,6 +471,7 @@ public class FtpClient extends TransferProtocolClient {
                     ((myAddress instanceof Inet6Address) ? "2" : "1") + "|" +
                     myAddress.getHostAddress() + "|" +
                     portSocket.getLocalPort() + "|";
+
             if (issueCommand(portCmd) == FTP_ERROR ||
                     issueCommand(cmd) == FTP_ERROR) {
                 // The EPRT command failed, let's fall back to good old PORT
@@ -458,17 +479,17 @@ public class FtpClient extends TransferProtocolClient {
                 byte[] addr = myAddress.getAddress();
 
                 /* append host addr */
-                for (int i = 0; i < addr.length; i++) {
-                    portCmd = portCmd + (addr[i] & 0xFF) + ",";
-                }
+                for (byte b : addr)
+                    portCmd = portCmd + (b & 0xFF) + ",";
 
                 /* append port number */
-                portCmd = portCmd + ((portSocket.getLocalPort() >>> 8) & 0xff) + ","
-                        + (portSocket.getLocalPort() & 0xff);
+                portCmd = portCmd + ((portSocket.getLocalPort() >>> 8) & 0xff) + "," + (portSocket.getLocalPort() & 0xff);
+
                 if (issueCommand(portCmd) == FTP_ERROR) {
                     e = new FtpProtocolException("PORT :" + getResponseString());
                     throw e;
                 }
+
                 if (issueCommand(cmd) == FTP_ERROR) {
                     e = new FtpProtocolException(cmd + ":" + getResponseString());
                     throw e;
@@ -482,7 +503,9 @@ public class FtpClient extends TransferProtocolClient {
                 if (defaultConnectTimeout > 0)
                     portSocket.setSoTimeout(defaultConnectTimeout);
             }
+
             clientSocket = portSocket.accept();
+
             if (readTimeout >= 0)
                 clientSocket.setSoTimeout(readTimeout);
             else {
@@ -496,41 +519,38 @@ public class FtpClient extends TransferProtocolClient {
         return clientSocket;
     }
 
-    /* public methods */
-
     /**
-     * Open a FTP connection to host <i>host</i>.
+     * Open an FTP connection to host <i>host</i>.
      *
      * @param host The hostname of the ftp server
-     * @throws FtpProtocolException if connection fails
+     * @throws IOException if connection fails
      */
     public void openServer(String host) throws IOException {
         openServer(host, FTP_PORT);
     }
 
     /**
-     * Open a FTP connection to host <i>host</i> on port <i>port</i>.
+     * Open an FTP connection to host <i>host</i> on port <i>port</i>.
      *
      * @param host the hostname of the ftp server
      * @param port the port to connect to (usually 21)
-     * @throws FtpProtocolException if connection fails
+     * @throws IOException if connection fails
      */
     public void openServer(String host, int port) throws IOException {
         this.serverName = host;
         super.openServer(host, port);
+
         if (readReply() == FTP_ERROR)
-            throw new FtpProtocolException("Welcome message: " +
-                    getResponseString());
+            throw new FtpProtocolException("Welcome message: " + getResponseString());
     }
 
 
     /**
-     * login user to a host with username <i>user</i> and password
-     * <i>password</i>
+     * Login user to a host with username <i>user</i> and password <i>password</i>.
      *
      * @param user     Username to use at login
      * @param password Password to use at login or null of none is needed
-     * @throws FtpLoginException if login is unsuccesful
+     * @throws IOException if login is unsuccessful
      */
     public void login(String user, String password) throws IOException {
         if (!serverIsOpen())
@@ -570,11 +590,11 @@ public class FtpClient extends TransferProtocolClient {
     }
 
     /**
-     * GET a file from the FTP server
+     * GET a file from the FTP server.
      *
      * @param filename name of the file to retrieve
      * @return the <code>InputStream</code> to read the file from
-     * @throws FileNotFoundException if the file can't be opened
+     * @throws IOException if the file can't be opened
      */
     public TelnetInputStream get(String filename) throws IOException {
         Socket s;
@@ -604,6 +624,7 @@ public class FtpClient extends TransferProtocolClient {
                     throw fileException; // Giving up.
                 }
             }
+
             if (pathElement != null)
                 s = openDataConnection("RETR " + pathElement);
             else
@@ -614,10 +635,11 @@ public class FtpClient extends TransferProtocolClient {
     }
 
     /**
-     * PUT a file to the FTP server
+     * PUT a file to the FTP server.
      *
      * @param filename name of the file to store
      * @return the <code>OutputStream</code> to write the file to
+     * @throws IOException if an I/O error occurs
      */
     public TelnetOutputStream put(String filename) throws IOException {
         Socket s = openDataConnection("STOR " + filename);
@@ -630,14 +652,16 @@ public class FtpClient extends TransferProtocolClient {
     }
 
     /**
-     * Append to a file on the FTP server
+     * Append to a file on the FTP server.
      *
      * @param filename name of the file to append to
      * @return the <code>OutputStream</code> to write the file to
+     * @throws IOException if an I/O error occurs
      */
     public TelnetOutputStream append(String filename) throws IOException {
         Socket s = openDataConnection("APPE " + filename);
         TelnetOutputStream out = new TelnetOutputStream(s.getOutputStream(), binaryMode);
+
         if (!binaryMode)
             out.setStickyCRLF(true);
 
@@ -645,9 +669,10 @@ public class FtpClient extends TransferProtocolClient {
     }
 
     /**
-     * LIST files in the current directory on a remote FTP server
+     * LIST files in the current directory on a remote FTP server.
      *
      * @return the <code>InputStream</code> to read the list from
+     * @throws IOException if an I/O error occurs
      */
     public TelnetInputStream list() throws IOException {
         Socket s = openDataConnection("LIST");
@@ -656,27 +681,23 @@ public class FtpClient extends TransferProtocolClient {
     }
 
     /**
-     * List (NLST) file names on a remote FTP server
+     * List (NLST) file names on a remote FTP server.
      *
-     * @param path pathname to the directory to list, null for current
-     *             directory
+     * @param path pathname to the directory to list, null for current directory
      * @return the <code>InputStream</code> to read the list from
+     * @throws IOException if an I/O error occurs
      */
     public TelnetInputStream nameList(String path) throws IOException {
-        Socket s;
-
-        if (path != null)
-            s = openDataConnection("NLST " + path);
-        else
-            s = openDataConnection("NLST");
+        Socket s = path == null ? openDataConnection("NLST") : openDataConnection("NLST " + path);
 
         return new TelnetInputStream(s.getInputStream(), binaryMode);
     }
 
     /**
-     * CD to a specific directory on a remote FTP server
+     * CD to a specific directory on a remote FTP server.
      *
      * @param remoteDirectory path of the directory to CD to
+     * @throws IOException if an I/O error occurs
      */
     public void cd(String remoteDirectory) throws IOException {
         if (remoteDirectory == null || "".equals(remoteDirectory))
@@ -686,36 +707,39 @@ public class FtpClient extends TransferProtocolClient {
     }
 
     /**
-     * CD to the parent directory on a remote FTP server
+     * CD to the parent directory on a remote FTP server.
+     *
+     * @throws IOException if an I/O error occurs
      */
     public void cdUp() throws IOException {
         issueCommandCheck("CDUP");
     }
 
     /**
-     * Print working directory of remote FTP server
+     * Print the working directory of remote FTP server.
      *
-     * @throws FtpProtocolException if the command fails
+     * @return current working directory path
+     * @throws IOException if the command fails
      */
     public String pwd() throws IOException {
         String answ;
-
         issueCommandCheck("PWD");
+
         /*
-         * answer will be of the following format :
-         *
-         * 257 "/" is current directory.
+         * the answer will be of the following format: 257 "/" is current directory.
          */
         answ = getResponseString();
+
         if (!answ.startsWith("257"))
             throw new FtpProtocolException("PWD failed. " + answ);
+
         return answ.substring(5, answ.lastIndexOf('"'));
     }
 
     /**
-     * Set transfer type to 'I'
+     * Set transfer type to 'I' (binary).
      *
-     * @throws FtpProtocolException if the command fails
+     * @throws IOException if the command fails
      */
     public void binary() throws IOException {
         issueCommandCheck("TYPE I");
@@ -723,9 +747,9 @@ public class FtpClient extends TransferProtocolClient {
     }
 
     /**
-     * Set transfer type to 'A'
+     * Set transfer type to 'A' (ascii).
      *
-     * @throws FtpProtocolException if the command fails
+     * @throws IOException if the command fails
      */
     public void ascii() throws IOException {
         issueCommandCheck("TYPE A");
@@ -733,9 +757,11 @@ public class FtpClient extends TransferProtocolClient {
     }
 
     /**
-     * Rename a file on the ftp server
+     * Rename a file on the ftp server.
      *
-     * @throws FtpProtocolException if the command fails
+     * @param from original file name
+     * @param to   new file name
+     * @throws IOException if the command fails
      */
     public void rename(String from, String to) throws IOException {
         issueCommandCheck("RNFR " + from);
@@ -743,9 +769,10 @@ public class FtpClient extends TransferProtocolClient {
     }
 
     /**
-     * Get the "System string" from the FTP server
+     * Get the "System string" from the FTP server.
      *
-     * @throws FtpProtocolException if it fails
+     * @return system type string
+     * @throws IOException if it fails
      */
     public String system() throws IOException {
         String answ;
@@ -759,18 +786,18 @@ public class FtpClient extends TransferProtocolClient {
     }
 
     /**
-     * Send a No-operation command. It's useful for testing the connection status
+     * Send a No-operation command. It's useful for testing the connection status.
      *
-     * @throws FtpProtocolException if the command fails
+     * @throws IOException if the command fails
      */
     public void noop() throws IOException {
         issueCommandCheck("NOOP");
     }
 
     /**
-     * Reinitialize the USER parameters on the FTp server
+     * Reinitialize the USER parameters on the FTP server.
      *
-     * @throws FtpProtocolException if the command fails
+     * @throws IOException if the command fails
      */
     public void reInit() throws IOException {
         issueCommandCheck("REIN");
@@ -781,7 +808,7 @@ public class FtpClient extends TransferProtocolClient {
      * New FTP client connected to host <i>host</i>.
      *
      * @param host Hostname of the FTP server
-     * @throws FtpProtocolException if the connection fails
+     * @throws IOException if the connection fails
      */
     public FtpClient(String host) throws IOException {
         super();
@@ -793,7 +820,7 @@ public class FtpClient extends TransferProtocolClient {
      *
      * @param host Hostname of the FTP server
      * @param port port number to connect to (usually 21)
-     * @throws FtpProtocolException if the connection fails
+     * @throws IOException if the connection fails
      */
     public FtpClient(String host, int port) throws IOException {
         super();
@@ -806,10 +833,20 @@ public class FtpClient extends TransferProtocolClient {
     public FtpClient() {
     }
 
+    /**
+     * Creates an FTP client with the specified proxy.
+     *
+     * @param p proxy to use for connections
+     */
     public FtpClient(Proxy p) {
         proxy = p;
     }
 
+    /**
+     * Finalizer to close the server connection if still open.
+     *
+     * @throws IOException if an I/O error occurs
+     */
     protected void finalize() throws IOException {
         /*
          * Do not call the "normal" closeServer() as we want finalization

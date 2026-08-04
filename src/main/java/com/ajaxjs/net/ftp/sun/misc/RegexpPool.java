@@ -38,11 +38,29 @@ import java.io.PrintStream;
  */
 
 public class RegexpPool {
+    /**
+     * Root node for prefix matching.
+     */
     private final RegexpNode prefixMachine = new RegexpNode();
+
+    /**
+     * Root node for suffix matching.
+     */
     private final RegexpNode suffixMachine = new RegexpNode();
+
+    /**
+     * Maximum depth value.
+     */
     private static final int BIG = 0x7FFFFFFF;
+
+    /**
+     * Depth of the last matched pattern.
+     */
     private int lastDepth = BIG;
 
+    /**
+     * Creates an empty regular expression pool.
+     */
     public RegexpPool() {
     }
 
@@ -56,7 +74,7 @@ public class RegexpPool {
      *            matched.  If ret is an instance of the RegexpTarget class, ret.found
      *            is called with the string fragment that matched the '*' as its
      *            parameter.
-     * @throws REException error
+     * @throws REException if the pattern is invalid or duplicate
      */
     public void add(String re, Object ret) throws REException {
         add(re, ret, false);
@@ -165,12 +183,23 @@ public class RegexpPool {
      * Identical to match except that it will only find matches to
      * regular expressions that were added to the pool <i>after</i>
      * the last regular expression that matched in the last call
-     * to match() or matchNext()
+     * to match() or matchNext().
+     *
+     * @param s string to match
+     * @return matched object or null
      */
     public Object matchNext(String s) {
         return matchAfter(s, lastDepth);
     }
 
+    /**
+     * Internal method to add a pattern to the pool.
+     *
+     * @param re     pattern to add
+     * @param ret    target object
+     * @param replace true to replace existing pattern
+     * @throws REException if duplicate pattern and replace is false
+     */
     private void add(String re, Object ret, boolean replace) throws REException {
         int len = re.length();
         RegexpNode p;
@@ -197,6 +226,13 @@ public class RegexpPool {
         p.result = ret;
     }
 
+    /**
+     * Internal method to match against patterns after a certain depth.
+     *
+     * @param s               string to match
+     * @param lastMatchDepth minimum depth to consider
+     * @return matched object or null
+     */
     private Object matchAfter(String s, int lastMatchDepth) {
         RegexpNode p = prefixMachine;
         RegexpNode best = p;
@@ -256,7 +292,9 @@ public class RegexpPool {
     }
 
     /**
-     * Print this pool to standard output
+     * Print this pool to standard output.
+     *
+     * @param out print stream to write to
      */
     public void print(PrintStream out) {
         out.print("Regexp pool:\n");
@@ -274,26 +312,70 @@ public class RegexpPool {
 
 }
 
-/* A node in a regular expression finite state machine. */
+/**
+ * A node in a regular expression finite state machine.
+ */
 class RegexpNode {
+    /**
+     * Character represented by this node.
+     */
     char c;
+
+    /**
+     * First child node in the tree.
+     */
     RegexpNode firstchild;
+
+    /**
+     * Next sibling node.
+     */
     RegexpNode nextsibling;
+
+    /**
+     * Depth of this node in the tree.
+     */
     int depth;
+
+    /**
+     * True if this node represents an exact match.
+     */
     boolean exact;
+
+    /**
+     * Result object associated with this node.
+     */
     Object result;
+
+    /**
+     * Original regular expression string.
+     */
     String re = null;
 
+    /**
+     * Creates a root node.
+     */
     RegexpNode() {
         c = '#';
         depth = 0;
     }
 
+    /**
+     * Creates a node for the specified character and depth.
+     *
+     * @param C     character for this node
+     * @param depth depth in the tree
+     */
     RegexpNode(char C, int depth) {
         c = C;
         this.depth = depth;
     }
 
+    /**
+     * Adds a child node for the specified character.
+     *
+     * @param C character to add
+     * @return the node for this character
+     */
     RegexpNode add(char C) {
         RegexpNode p = firstchild;
         if (p == null)
@@ -314,6 +396,12 @@ class RegexpNode {
         return p;
     }
 
+    /**
+     * Finds a child node for the specified character.
+     *
+     * @param C character to find
+     * @return the node for this character, or null if not found
+     */
     RegexpNode find(char C) {
         for (RegexpNode p = firstchild; p != null; p = p.nextsibling) {
             if (p.c == C)
@@ -323,6 +411,11 @@ class RegexpNode {
         return null;
     }
 
+    /**
+     * Prints this node and its children to the specified stream.
+     *
+     * @param out print stream to write to
+     */
     void print(PrintStream out) {
         if (nextsibling != null) {
             RegexpNode p = this;

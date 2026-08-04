@@ -32,6 +32,11 @@ package com.ajaxjs.net.ftp.sun.ftp;
  * @author Jonathan Payne
  */
 public class FtpLoginException extends FtpProtocolException {
+    /**
+     * Constructs an FtpLoginException with the specified detail message.
+     *
+     * @param s detail message
+     */
     FtpLoginException(String s) {
         super(s);
     }

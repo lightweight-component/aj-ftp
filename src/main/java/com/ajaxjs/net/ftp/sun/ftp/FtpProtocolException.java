@@ -34,6 +34,11 @@ import java.io.IOException;
  * @author Jonathan Payne
  */
 public class FtpProtocolException extends IOException {
+    /**
+     * Constructs an FtpProtocolException with the specified detail message.
+     *
+     * @param s detail message
+     */
     FtpProtocolException(String s) {
         super(s);
     }

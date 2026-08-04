@@ -4,7 +4,15 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+/**
+ * Test class for FTP client functionality.
+ */
 public class TestFTP {
+    /**
+     * Tests file upload to FTP server.
+     *
+     * @throws IOException if an I/O error occurs
+     */
     @Test
     public void testUpload() throws IOException {
         UploadFtp client = new UploadFtp("speedtest.tele2.net", 21);
@@ -13,6 +21,11 @@ public class TestFTP {
         client.closeServer();
     }
 
+    /**
+     * Tests file download from FTP server.
+     *
+     * @throws IOException if an I/O error occurs
+     */
     @Test
     public void testDownload() throws IOException {
         UploadFtp ftp = new UploadFtp("speedtest.tele2.net", 21);

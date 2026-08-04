@@ -32,7 +32,7 @@ package com.ajaxjs.net.ftp.sun.misc;
  */
 public class Regexp {
     /**
-     * if true, then the matching process ignores the case.
+     * If true, then the matching process ignores the case.
      */
     public boolean ignoreCase;
 
@@ -41,10 +41,30 @@ public class Regexp {
      * prefix, a constant string suffix, and a series of floating strings in
      * between.  In the input regular expression, they are separated by *s
      */
+
+    /**
+     * The original regular expression string.
+     */
     public String exp;
+
+    /**
+     * Prefix string before the first '*'.
+     */
     public String prefix, suffix;
+
+    /**
+     * True if the pattern has no wildcards.
+     */
     public boolean exact;
+
+    /**
+     * Length of prefix, suffix, and total matched characters.
+     */
     public int prefixLen, suffixLen, totalLen;
+
+    /**
+     * Array of strings between '*' wildcards.
+     */
     public String mids[];
 
     /**
@@ -58,6 +78,8 @@ public class Regexp {
      * <dt>/tmp/*new*.gif <dd>Matches any string that starts with "/tmp/"
      * and ends with ".gif" and has "new" somewhere in between.
      * </dl>
+     *
+     * @param s regular expression pattern
      */
     public Regexp(String s) {
         exp = s;
@@ -111,6 +133,9 @@ public class Regexp {
 
     /**
      * Returns true iff the String s matches this regular expression.
+     *
+     * @param s string to test
+     * @return true if matches
      */
     final boolean matches(String s) {
         return matches(s, 0, s.length());
@@ -119,6 +144,11 @@ public class Regexp {
     /**
      * Returns true iff the substring of s from offset for len characters
      * matches this regular expression.
+     *
+     * @param s      source string
+     * @param offset start offset in the string
+     * @param len    length of substring to test
+     * @return true if matches
      */
     boolean matches(String s, int offset, int len) {
         if (exact)
