@@ -39,7 +39,7 @@ Requires Java8+.
 <dependency>
     <groupId>com.ajaxjs</groupId>
     <artifactId>aj-ftp</artifactId>
-    <version>1.1</version>
+    <version>1.2</version>
 </dependency>
 ```
 Examples of uploading and downloading files via FTP are shown below. The server `speedtest.tele2.net` is a publicly available, free, and anonymous FTP service found online.

@@ -91,10 +91,12 @@ public class Regexp {
             exact = true;       // no * s
         } else {
             prefixLen = firstst;
+
             if (firstst == 0)
                 prefix = null;
             else
                 prefix = s.substring(0, firstst);
+
             suffixLen = s.length() - lastst - 1;
 
             if (suffixLen == 0)
@@ -164,21 +166,22 @@ public class Regexp {
         if (mids == null)
             return true;
 
-        int nmids = mids.length;
+//        int nmids = mids.length;
         int spos = offset + prefixLen;
         int limit = offset + len - suffixLen;
 
         for (String ms : mids) {
             int ml = ms.length();
-            while (spos + ml <= limit &&
-                    !ms.regionMatches(ignoreCase, 0, s, spos, ml))
+
+            while (spos + ml <= limit && !ms.regionMatches(ignoreCase, 0, s, spos, ml))
                 spos++;
+
             if (spos + ml > limit)
                 return false;
+
             spos += ml;
         }
 
         return true;
     }
-
 }

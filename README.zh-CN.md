@@ -1,5 +1,5 @@
 <h1 align="center">aj-ftp</h1>
-<h3 align="center">A Lightweight Java FTP Client.</h3>
+<h3 align="center">一个轻量级 Java FTP 客户端</h3>
 
 <div align="center" style="text-align: center;">
 
@@ -19,144 +19,60 @@
 <hr />
 
 
-This is a simple and lightweight FTP component with the following features:
+**aj-ftp** 是一个简单、轻量级的 Java FTP 客户端组件，主要用于实现文件的上传和下载功能。
 
-- Simple & Lightweight: Easy to use and minimal.
-- Based on JDK's `sun.*` extension package: Most standard JDK distributions already include built-in FTP capabilities. However, some environments (such as Android) do not support the `sun.*` packages — that's where this component comes in handy.
-- Supports Progress Tracking: Adds the ability to monitor upload/download progress.
+## 核心特性
+*   **简单轻量**：易于使用，无依赖。
+*   **兼容性好**：基于 JDK 的 `sun.*` 扩展包实现。当运行环境（如 Android）不支持 `sun.*` 包时，此组件可以作为替代方案。
+*   **支持进度追踪**：内置了监控文件上传和下载进度的功能。
 
-## Source code
+## 🚀 快速开始
 
-[Github](https://github.com/lightweight-component/aj-ftp) | [Gitcode](https://gitcode.com/lightweight-component/aj-ftp)
+### 安装
+在 Maven 项目中，通过添加以下依赖来引入该库：
 
-
-## Usage
-
-Requires Java8+.
-
-### Install
 ```xml
 <dependency>
     <groupId>com.ajaxjs</groupId>
     <artifactId>aj-ftp</artifactId>
-    <version>1.1</version>
+    <version>1.2</version>
 </dependency>
 ```
-Examples of uploading and downloading files via FTP are shown below. The server `speedtest.tele2.net` is a publicly available, free, and anonymous FTP service found online.
 
+### 使用示例
+以下代码展示了如何使用`aj-ftp`连接到一个公共的 FTP 服务器进行文件上传和下载。
 
 ```java
+import com.ajaxjs.net.ftp.UploadFtp;
+import java.io.IOException;
+
 public class TestFTP {
-    @Test
+    
+    // 测试文件上传
     public void testUpload() throws IOException {
+        // 连接到服务器
         UploadFtp client = new UploadFtp("speedtest.tele2.net", 21);
+        // 使用匿名登录
         client.login("anonymous", "anonymous");
+        // 上传文件 (本地路径, 服务器目标路径)
         client.upload("c:\\temp\\re.zip", "/upload/re.zip");
+        // 关闭连接
         client.closeServer();
     }
 
-    @Test
+    // 测试文件下载
     public void testDownload() throws IOException {
+        // 连接到服务器
         UploadFtp ftp = new UploadFtp("speedtest.tele2.net", 21);
+        // 使用匿名登录
         ftp.login("anonymous", "anonymous");
+        // 下载文件 (服务器源路径, 本地目标路径)
         ftp.getFile("/1KB.zip", "c:\\temp\\re.zip");
     }
 }
 ```
 
-## Key Source Code
-
-The main class is `UploadFtp`, which extends the base `FtpClient` class and is used to implement FTP file upload and download functionality.
-
-
-
-```java
-package com.ajaxjs.net.ftp;
-
-import com.ajaxjs.net.ftp.sun.TelnetInputStream;
-import com.ajaxjs.net.ftp.sun.TelnetOutputStream;
-import com.ajaxjs.net.ftp.sun.ftp.FtpClient;
-
-import java.io.*;
-import java.nio.file.Files;
-
-/**
- * FTP 文件上传
- */
-public class UploadFtp extends FtpClient {
-    public UploadFtp(String server, int port) throws IOException {
-        super(server, port);
-    }
-
-    /**
-     * 用书上传本地文件到 FTP 服务器上
-     *
-     * @param source 上传文件的本地路径
-     * @param target 上传到 FTP 的文件路径
-     */
-    public void upload(String source, String target) {
-        try {
-            binary();
-
-            try (TelnetOutputStream ftp = put(target);
-                 InputStream file = Files.newInputStream(new File(source).toPath())) {
-                BufferedInputStream in = new BufferedInputStream(file);
-
-                new ProgressListener().copy(in, new BufferedOutputStream(ftp), in.available());
-
-                System.out.print("put file suc from " + source + "   to  " + target + "\r\n");
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * 从 FTP 上下载所需要的文件
-     *
-     * @param source 在 FTP 上路径及文件名
-     * @param target 要保存的本地的路径
-     */
-    public void getFile(String source, String target) {
-        try {
-            binary();
-
-            try (TelnetInputStream ftp = get(source);
-                 OutputStream file = Files.newOutputStream(new File(target).toPath())) {
-
-                ProgressListener listener = new ProgressListener();
-                listener.setFileName(target);
-                listener.copy(new BufferedInputStream(ftp), new BufferedOutputStream(file), getFileSize(source, ftp));
-
-                System.out.print("get file suc from " + source + "   to  " + target + "\r\n");
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * 为了计算下载速度和百分比，读取 FTP 该文件的大小
-     */
-    private int getFileSize(String source, TelnetInputStream ftp) throws IOException {
-        // 这里的组合使用是必须得 sendServer 后到 readServerResponse
-        sendServer("SIZE " + source + "\r\n");
-
-        if (readServerResponse() == 213) {
-            String msg = getResponseString();
-
-            try {
-                return Integer.parseInt(msg.substring(3).trim());
-            } catch (Exception e) {
-            }
-        }
-
-        return 0;
-    }
-}
-```
-
-Tutorial(Chinese): https://blog.csdn.net/zhangxin09/article/details/134222511.
-
-
-
+## 🔗 相关资源
+*   **源代码仓库**: [GitHub](https://github.com/lightweight-component/aj-ftp) | [Gitcode](https://gitcode.com/lightweight-component/aj-ftp)
+*   **中文教程**: [CSDN 博客](https://blog.csdn.net/zhangxin09/article/details/134222511)
+*   **API 文档**: [Javadoc](https://javadoc.io/doc/com.ajaxjs/ajaxjs-ftp)
