@@ -33,15 +33,15 @@ import java.io.OutputStream;
  * This class provides input and output streams for telnet clients.
  * This class overrides write to do CRLF processing as specified in
  * RFC 854. The class assumes it is running on a system where lines
- * are terminated with a single newline <LF> character.
+ * are terminated with a single newline LF character.
  * This is the relevant section of RFC 824 regarding CRLF processing:
  *
  * <pre>
  * The sequence "CR LF", as defined, will cause the NVT to be
  * positioned at the left margin of the next print line (as would,
- * for example, the sequence "LF CR").  However, many systems and
+ * for example, the sequence "LF CR"). However, many systems and
  * terminals do not treat CR and LF independently, and will have to
- * go to some effort to simulate their effect.  (For example, some
+ * go to some effort to simulate their effect. (For example, some
  * terminals do not have a CR independent of the LF, but on such
  * terminals it may be possible to simulate a CR by backspacing.)
  * Therefore, the sequence "CR LF" must be treated as a single "new

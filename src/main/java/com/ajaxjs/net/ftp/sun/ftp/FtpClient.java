@@ -237,11 +237,11 @@ public class FtpClient extends TransferProtocolClient {
      */
     protected int issueCommand(String cmd) throws IOException {
         command = cmd;
-
         int reply;
 
         while (replyPending) {
             replyPending = false;
+
             if (readReply() == FTP_ERROR)
                 throw new FtpProtocolException("Error reading FTP pending reply\n");
         }
@@ -249,6 +249,7 @@ public class FtpClient extends TransferProtocolClient {
         if (cmd.indexOf('\n') != -1) {
             FtpProtocolException ex = new FtpProtocolException("Illegal FTP command");
             ex.initCause(new IllegalArgumentException("Illegal carriage return"));
+
             throw ex;
         }
 
@@ -304,7 +305,7 @@ public class FtpClient extends TransferProtocolClient {
 
     /**
      * Tries to open a Data Connection in "PASSIVE" mode by issuing a EPSV or
-     * PASV command then opening a Socket to the specified address & port.
+     * PASV command then opening a Socket to the specified address and port.
      *
      * @return the opened socket
      * @throws IOException if an error occurs when issuing the PASV command to the ftp server
@@ -539,7 +540,6 @@ public class FtpClient extends TransferProtocolClient {
             throw new FtpProtocolException("Welcome message: " + getResponseString());
     }
 
-
     /**
      * Login user to a host with username <i>user</i> and password <i>password</i>.
      *
@@ -557,9 +557,7 @@ public class FtpClient extends TransferProtocolClient {
         if (issueCommand("USER " + user) == FTP_ERROR)
             throw new FtpLoginException("user " + user + " : " + getResponseString());
 
-        /*
-         * Checks for "331 Username okay, need password." answer
-         */
+        // Checks for "331 Username okay, need password." answer
         if (lastReplyCode == 331)
             if ((password == null) || (password.length() == 0) || (issueCommand("PASS " + password) == FTP_ERROR))
                 throw new FtpLoginException("password: " + getResponseString());
@@ -573,8 +571,7 @@ public class FtpClient extends TransferProtocolClient {
 
             if (l != null) {
                 if (l.length() >= 4 && l.startsWith("230"))
-                    // get rid of the "230-" prefix
-                    l = l.substring(4);
+                    l = l.substring(4);// get rid of the "230-" prefix
 
                 sb.append(l);
             }
@@ -582,6 +579,10 @@ public class FtpClient extends TransferProtocolClient {
 
         welcomeMsg = sb.toString();
         loggedIn = true;
+    }
+
+    public void anonymousLogin() throws IOException {
+        login("anonymous", "a");
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.ajaxjs.net.ftp;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,6 +11,7 @@ import java.io.OutputStream;
  * Listener for tracking upload/download progress.
  */
 @Data
+@Slf4j
 public class ProgressListener {
     /**
      * Name of the file being transferred.
@@ -29,7 +31,7 @@ public class ProgressListener {
     /**
      * Updates the progress with the current byte counts.
      *
-     * @param aBytesRead    number of bytes already read
+     * @param aBytesRead     number of bytes already read
      * @param aContentLength total content length in bytes
      */
     public void update(long aBytesRead, long aContentLength) {
@@ -37,7 +39,7 @@ public class ProgressListener {
         contentLength = aContentLength / 1024L;
         // long megaBytes = aBytesRead / 1048576L;
 
-        System.out.println("上传或者下载文件：" + fileName + "，文件的大小：" + aBytesRead + "/" + aContentLength);
+        log.info("upload or download file: {}, size: {}/{}", fileName, aBytesRead, aContentLength);
     }
 
     /**
@@ -56,14 +58,15 @@ public class ProgressListener {
         try {
             while (true) {
                 res = in.read(buffer);
-                if (res == -1) {
+                if (res == -1)
                     break;
-                }
+
                 if (res > 0) {
                     total += res;
+
                     if (out != null) {
                         out.write(buffer, 0, res);
-                        System.out.println("文件的大小" + size + "读取的大小" + total);
+                        log.info("File size: {}, total: {}", size, total);
                         update(total, size);
                     }
                 }

@@ -2,12 +2,12 @@ package com.ajaxjs.net.ftp;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.net.URL;
 
 /**
  * Test class for FTP client functionality.
@@ -37,11 +37,22 @@ public class TestFTP {
         UploadFtp ftp = new UploadFtp("test.rebex.net", 21);
         ftp.login("demo", "password");
         ftp.getFile("/readme.txt", "c:\\temp\\readme.txt");
+
+
+    }
+
+    // 匿名的
+    @Test
+    void testAyDownload() throws IOException {
+        UploadFtp ftp = new UploadFtp("ftp.slackware.com", 21);
+        ftp.anonymousLogin();
+        ftp.getFile("/.2/debian/debian/README", "c:\\temp\\readme2.txt");
     }
 
     private static String getTestResourceFilePath(String resourceName) throws IOException {
         ClassLoader cl = TestFTP.class.getClassLoader();
         URL url = cl.getResource(resourceName);
+
         if (url == null)
             throw new IOException("Test resource not found: " + resourceName);
 

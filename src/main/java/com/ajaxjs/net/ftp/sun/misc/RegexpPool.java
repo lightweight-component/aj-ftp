@@ -24,14 +24,12 @@
  */
 
 package com.ajaxjs.net.ftp.sun.misc;
-//import sun.misc.REException;
-//import sun.misc.RegexpTarget;
 
 import java.io.PrintStream;
 
 /**
- * A class to represent a pool of regular expressions.  A string
- * can be matched against the whole pool all at once.  It is much
+ * A class to represent a pool of regular expressions. A string
+ * can be matched against the whole pool all at once. It is much
  * faster than doing individual regular expression matches one-by-one.
  *
  * @author James Gosling
@@ -113,7 +111,6 @@ public class RegexpPool {
         RegexpNode best = p;
         int len = re.length() - 1;
         int i;
-        boolean prefix = true;
 
         if (!re.startsWith("*") || !re.endsWith("*"))
             len++;
@@ -121,47 +118,35 @@ public class RegexpPool {
         if (len <= 0)
             return null;
 
-        /* March forward through the prefix machine */
-        for (i = 0; p != null; i++) {
-            if (p.result != null && p.depth < BIG
-                    && (!p.exact || i == len)) {
+        for (i = 0; p != null; i++) {// March forward through the prefix machine
+            if (p.result != null && p.depth < BIG && (!p.exact || i == len))
                 best = p;
-            }
 
             if (i >= len)
                 break;
             p = p.find(re.charAt(i));
         }
 
-        /* march backward through the suffix machine */
-        p = suffixMachine;
+        p = suffixMachine;// march backward through the suffix machine
 
         for (i = len; --i >= 0 && p != null; ) {
             if (p.result != null && p.depth < BIG) {
-                prefix = false;
                 best = p;
             }
 
             p = p.find(re.charAt(i));
         }
 
-        // delete only if there is an exact match
-        if (prefix) {
-            if (re.equals(best.re)) {
-                o = best.result;
-                best.result = null;
-            }
-        } else {
-            if (re.equals(best.re)) {
-                o = best.result;
-                best.result = null;
-            }
+        if (re.equals(best.re)) {// delete only if there is an exact match
+            o = best.result;
+            best.result = null;
         }
+
         return o;
     }
 
     /**
-     * Search for a match to a string & return the object associated
+     * Search for a match to a string and return the object associated
      * with it with the match.  When multiple regular expressions
      * would match the string, the best match is returned first.
      * The next best match is returned, the next time matchNext is
@@ -195,27 +180,33 @@ public class RegexpPool {
     /**
      * Internal method to add a pattern to the pool.
      *
-     * @param re     pattern to add
-     * @param ret    target object
+     * @param re      pattern to add
+     * @param ret     target object
      * @param replace true to replace existing pattern
      * @throws REException if duplicate pattern and replace is false
      */
     private void add(String re, Object ret, boolean replace) throws REException {
         int len = re.length();
         RegexpNode p;
+
         if (re.charAt(0) == '*') {
             p = suffixMachine;
+
             while (len > 1)
                 p = p.add(re.charAt(--len));
         } else {
             boolean exact = false;
+
             if (re.charAt(len - 1) == '*')
                 len--;
             else
                 exact = true;
+
             p = prefixMachine;
+
             for (int i = 0; i < len; i++)
                 p = p.add(re.charAt(i));
+
             p.exact = exact;
         }
 
@@ -229,7 +220,7 @@ public class RegexpPool {
     /**
      * Internal method to match against patterns after a certain depth.
      *
-     * @param s               string to match
+     * @param s              string to match
      * @param lastMatchDepth minimum depth to consider
      * @return matched object or null
      */
@@ -240,19 +231,22 @@ public class RegexpPool {
         int bend = 0;
         int len = s.length();
         int i;
+
         if (len <= 0)
             return null;
+
         /* March forward through the prefix machine */
         for (i = 0; p != null; i++) {
-            if (p.result != null && p.depth < lastMatchDepth
-                    && (!p.exact || i == len)) {
+            if (p.result != null && p.depth < lastMatchDepth && (!p.exact || i == len)) {
                 lastDepth = p.depth;
                 best = p;
                 bst = i;
                 bend = len;
             }
+
             if (i >= len)
                 break;
+
             p = p.find(s.charAt(i));
         }
         /* march backward through the suffix machine */
@@ -265,6 +259,7 @@ public class RegexpPool {
                 bst = 0;
                 bend = i + 1;
             }
+
             p = p.find(s.charAt(i));
         }
 
@@ -298,142 +293,17 @@ public class RegexpPool {
      */
     public void print(PrintStream out) {
         out.print("Regexp pool:\n");
+
         if (suffixMachine.firstchild != null) {
             out.print(" Suffix machine: ");
             suffixMachine.firstchild.print(out);
             out.print("\n");
         }
+
         if (prefixMachine.firstchild != null) {
             out.print(" Prefix machine: ");
             prefixMachine.firstchild.print(out);
             out.print("\n");
-        }
-    }
-
-}
-
-/**
- * A node in a regular expression finite state machine.
- */
-class RegexpNode {
-    /**
-     * Character represented by this node.
-     */
-    char c;
-
-    /**
-     * First child node in the tree.
-     */
-    RegexpNode firstchild;
-
-    /**
-     * Next sibling node.
-     */
-    RegexpNode nextsibling;
-
-    /**
-     * Depth of this node in the tree.
-     */
-    int depth;
-
-    /**
-     * True if this node represents an exact match.
-     */
-    boolean exact;
-
-    /**
-     * Result object associated with this node.
-     */
-    Object result;
-
-    /**
-     * Original regular expression string.
-     */
-    String re = null;
-
-    /**
-     * Creates a root node.
-     */
-    RegexpNode() {
-        c = '#';
-        depth = 0;
-    }
-
-    /**
-     * Creates a node for the specified character and depth.
-     *
-     * @param C     character for this node
-     * @param depth depth in the tree
-     */
-    RegexpNode(char C, int depth) {
-        c = C;
-        this.depth = depth;
-    }
-
-    /**
-     * Adds a child node for the specified character.
-     *
-     * @param C character to add
-     * @return the node for this character
-     */
-    RegexpNode add(char C) {
-        RegexpNode p = firstchild;
-        if (p == null)
-            p = new RegexpNode(C, depth + 1);
-        else {
-            while (p != null)
-                if (p.c == C)
-                    return p;
-                else
-                    p = p.nextsibling;
-
-            p = new RegexpNode(C, depth + 1);
-            p.nextsibling = firstchild;
-        }
-
-        firstchild = p;
-
-        return p;
-    }
-
-    /**
-     * Finds a child node for the specified character.
-     *
-     * @param C character to find
-     * @return the node for this character, or null if not found
-     */
-    RegexpNode find(char C) {
-        for (RegexpNode p = firstchild; p != null; p = p.nextsibling) {
-            if (p.c == C)
-                return p;
-        }
-
-        return null;
-    }
-
-    /**
-     * Prints this node and its children to the specified stream.
-     *
-     * @param out print stream to write to
-     */
-    void print(PrintStream out) {
-        if (nextsibling != null) {
-            RegexpNode p = this;
-            out.print("(");
-
-            while (p != null) {
-                out.write(p.c);
-
-                if (p.firstchild != null)
-                    p.firstchild.print(out);
-
-                p = p.nextsibling;
-                out.write(p != null ? '|' : ')');
-            }
-        } else {
-            out.write(c);
-            if (firstchild != null)
-                firstchild.print(out);
         }
     }
 }

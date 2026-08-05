@@ -33,7 +33,7 @@ import java.io.InputStream;
  * This class provides input and output streams for telnet clients.
  * This class overrides read to do CRLF processing as specified in
  * RFC 854. The class assumes it is running on a system where lines
- * are terminated with a single newline <LF> character.
+ * are terminated with a single newline LF character.
  * <p>
  * This is the relevant section of RFC 824 regarding CRLF processing:
  *
@@ -86,7 +86,7 @@ public class TelnetInputStream extends FilterInputStream {
     /**
      * True when the stream is in binary mode and CRLF processing is disabled.
      */
-    public boolean binaryMode = false;
+    public boolean binaryMode;
 
     /**
      * Creates a new telnet input stream.
