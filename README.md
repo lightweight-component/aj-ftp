@@ -3,7 +3,7 @@
 
 <div align="center" style="text-align: center;">
 
-[![Maven Central](https://img.shields.io/maven-central/v/com.ajaxjs/ajaxjs-util?label=Latest%20Release)](https://central.sonatype.com/artifact/com.ajaxjs/aj-ftp)
+[![Maven Central](https://img.shields.io/maven-central/v/com.ajaxjs/aj-ftp?label=Latest%20Release)](https://central.sonatype.com/artifact/com.ajaxjs/aj-ftp)
 ![Java Version](https://img.shields.io/badge/Java-8-blue)
 [![Javadoc](https://img.shields.io/badge/javadoc-1.2-brightgreen.svg?)](https://javadoc.io/doc/com.ajaxjs/ajaxjs-ftp )
 ![coverage](https://img.shields.io/badge/coverage-80%25-yellowgreen.svg?maxAge=2592000)
